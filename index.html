@@ -142,12 +142,11 @@ small{color:var(--mut)}
       <div id="geoChips" class="chips"></div>
       <div class="row">
         <select id="gCountry" onchange="geoCountryChange()"></select>
-        <select id="gDist" class="hide" onchange="geoDistChange()"></select>
+        <select id="gDist" class="hide"></select>
       </div>
       <input id="gOther" class="hide" placeholder="দেশের কোড (২ অক্ষর, যেমন MY, SG, US)" maxlength="2" style="margin-top:6px;text-transform:uppercase">
-      <input id="gUpa" class="hide" placeholder="উপজেলা (ইংরেজি বানান; একাধিক বানান কমা দিয়ে, যেমন: Savar, Savar Upazila)" style="margin-top:6px">
       <button class="btn ghost sm" style="margin-top:6px" onclick="addGeo()">➕ এই এলাকা যোগ করুন</button>
-      <small style="display:block;margin-top:4px">শুধু দেশ বাছলে পুরো দেশ। জেলা বাছলে পুরো জেলা। উপজেলা লিখলে শুধু সেই উপজেলা (ব্যবহারকারীর GPS থাকলে)। এলাকা না জানা ব্যবহারকারী শুধু "সব জায়গার" বিজ্ঞাপন দেখবে।</small>
+      <small style="display:block;margin-top:4px">শুধু দেশ বাছলে পুরো দেশ, জেলা বাছলে পুরো জেলা। ব্যবহারকারীর এলাকা ইন্টারনেট ঠিকানা (IP) থেকে আনুমানিক ধরা হয়, তাই জেলা সবসময় নির্ভুল নাও হতে পারে (মোবাইল ডেটায় অনেক সময় ঢাকা আসে)। এলাকা না জানা ব্যবহারকারী শুধু "সব জায়গার" বিজ্ঞাপন দেখবে।</small>
       <div class="sw" style="margin-top:10px"><span>চালু</span><input type="checkbox" id="aActive" checked></div>
       <div class="row" style="margin-top:10px"><button class="btn ok" onclick="saveAd()">💾 সেভ করুন</button><button class="btn ghost" onclick="resetAd()">নতুন ফর্ম</button></div>
     </div>
@@ -324,21 +323,16 @@ function geoCountryChange() {
   var c = $('gCountry').value;
   $('gDist').classList.toggle('hide', c !== 'BD');
   $('gOther').classList.toggle('hide', c !== '__other');
-  if (c !== 'BD') { $('gDist').value = ''; $('gUpa').value = ''; $('gUpa').classList.add('hide'); }
+  if (c !== 'BD') $('gDist').value = '';
 }
-function geoDistChange() { var has = !!$('gDist').value; $('gUpa').classList.toggle('hide', !has); if (!has) $('gUpa').value = ''; }
 function addGeo() {
   var c = $('gCountry').value;
   if (c === '__other') c = $('gOther').value.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(c)) return toast('আগে একটি দেশ বেছে নিন (বা ২ অক্ষরের কোড দিন)।', false);
   var t = c, d = c === 'BD' ? $('gDist').value : '';
-  if (d) {
-    t += '/' + d;
-    var u = $('gUpa').value.replace(/[;\/]/g, ' ').split(',').map(function (x) { return x.trim().replace(/\s+/g, ' '); }).filter(Boolean).join(', ');
-    if (u) t += '/' + u;
-  }
+  if (d) t += '/' + d;
   if (S.geo.indexOf(t) < 0) S.geo.push(t);
-  $('gUpa').value = ''; renderGeo();
+  renderGeo();
 }
 function delGeo(i) { S.geo.splice(i, 1); renderGeo(); }
 
