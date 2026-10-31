@@ -105,6 +105,10 @@ small{color:var(--mut)}
       <div class="sw"><div><h2 style="margin:0">সব বিজ্ঞাপন চালু</h2><small>বন্ধ করলে কারও ফোনে কোনো বিজ্ঞাপন দেখাবে না</small></div>
         <input type="checkbox" id="adsEnabled" onchange="saveMaster()"></div>
     </div>
+    <div class="card">
+      <div class="sw"><div><h2 style="margin:0">বিজ্ঞাপন বাধ্যতামূলক</h2><small>চালু করলে: গ্রাফিং স্টুডিও, সমীকরণ, ম্যাচ, কনস্ট্যান্ট ও সূত্রাবলী — বিজ্ঞাপনের ৫ সেকেন্ড পুরো না দেখলে এগুলো ব্যবহার করা যাবে না। বন্ধ থাকলে আগের মতোই (বিজ্ঞাপন আসে, কিন্তু সুবিধা আটকায় না)।</small></div>
+        <input type="checkbox" id="adRequired" onchange="saveRequired()"></div>
+    </div>
     <div class="card" id="adForm">
       <h2 id="adFormTitle">নতুন বিজ্ঞাপন</h2>
       <input type="hidden" id="aId">
@@ -315,6 +319,7 @@ function loadCfg() {
     S.cfg = j.fields ? decF(j.fields) : {};
     var c = S.cfg, a = c.announcement || {}, u = c.update || {};
     $('adsEnabled').checked = c.adsEnabled !== false;
+    $('adRequired').checked = c.adRequired === true;
     $('nText').value = a.text || ''; $('nActive').checked = !!a.active;
     $('uVer').value = u.version || ''; $('uUrl').value = u.url || ''; $('uNote').value = u.note || ''; $('uActive').checked = !!u.active;
   });
@@ -325,6 +330,7 @@ function patchCfg(path, value, msg) {
     .then(function (r) { if (!r.ok) throw 0; toast(msg + ' ✅'); }).catch(function () { toast('সেভ হয়নি।', false); });
 }
 function saveMaster() { patchCfg('adsEnabled', $('adsEnabled').checked, $('adsEnabled').checked ? 'বিজ্ঞাপন চালু হয়েছে' : 'সব বিজ্ঞাপন বন্ধ হয়েছে'); }
+function saveRequired() { patchCfg('adRequired', $('adRequired').checked, $('adRequired').checked ? 'বিজ্ঞাপন এখন বাধ্যতামূলক' : 'বিজ্ঞাপন আর বাধ্যতামূলক নয়'); }
 function saveAnn() { patchCfg('announcement', { text: $('nText').value.trim(), active: $('nActive').checked, id: Date.now() }, 'ঘোষণা প্রকাশিত'); }
 function saveUpd() {
   var url = $('uUrl').value.trim();
