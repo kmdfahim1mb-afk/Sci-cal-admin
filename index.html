@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <script src="config.js"></script>
+<script src="geodata.js"></script>
 <style>
 *{box-sizing:border-box}
 :root{--bg:#020617;--card:#0f172a;--line:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--pri:#4f46e5;--cy:#22d3ee;--ok:#10b981;--bad:#ef4444;--warn:#f59e0b}
@@ -48,6 +49,9 @@ textarea{min-height:64px;resize:vertical}
 .sw{display:flex;align-items:center;justify-content:space-between;gap:10px}
 .sw input{width:auto;transform:scale(1.4)}
 small{color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{background:#0c4a6e;color:#bae6fd;border-radius:99px;padding:3px 6px 3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.chip b{cursor:pointer;background:#082f49;border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
 </style>
 </head>
 <body>
@@ -134,6 +138,16 @@ small{color:var(--mut)}
         <div><label>ভাষা</label><select id="aLang"><option value="all">সবার জন্য</option><option value="bn">শুধু বাংলা</option><option value="en">শুধু English</option></select></div>
         <div><label>গুরুত্ব (১–১০, বেশি = বেশিবার)</label><input id="aWeight" type="number" min="1" max="10" value="1"></div>
       </div>
+      <label>📍 কোথায় দেখাবে (কিছু না যোগ করলে = সব জায়গায়)</label>
+      <div id="geoChips" class="chips"></div>
+      <div class="row">
+        <select id="gCountry" onchange="geoCountryChange()"></select>
+        <select id="gDist" class="hide" onchange="geoDistChange()"></select>
+      </div>
+      <input id="gOther" class="hide" placeholder="দেশের কোড (২ অক্ষর, যেমন MY, SG, US)" maxlength="2" style="margin-top:6px;text-transform:uppercase">
+      <input id="gUpa" class="hide" placeholder="উপজেলা (ইংরেজি বানান; একাধিক বানান কমা দিয়ে, যেমন: Savar, Savar Upazila)" style="margin-top:6px">
+      <button class="btn ghost sm" style="margin-top:6px" onclick="addGeo()">➕ এই এলাকা যোগ করুন</button>
+      <small style="display:block;margin-top:4px">শুধু দেশ বাছলে পুরো দেশ। জেলা বাছলে পুরো জেলা। উপজেলা লিখলে শুধু সেই উপজেলা (ব্যবহারকারীর GPS থাকলে)। এলাকা না জানা ব্যবহারকারী শুধু "সব জায়গার" বিজ্ঞাপন দেখবে।</small>
       <div class="sw" style="margin-top:10px"><span>চালু</span><input type="checkbox" id="aActive" checked></div>
       <div class="row" style="margin-top:10px"><button class="btn ok" onclick="saveAd()">💾 সেভ করুন</button><button class="btn ghost" onclick="resetAd()">নতুন ফর্ম</button></div>
     </div>
@@ -169,7 +183,9 @@ var CFG = window.SCICAL_CFG || {};
 var API = CFG.apiKey, PID = CFG.projectId;
 var BASE = 'https://firestore.googleapis.com/v1/projects/' + PID + '/databases/(default)/documents';
 var $ = function (i) { return document.getElementById(i); };
-var S = { idToken: null, refresh: null, exp: 0, ads: [], cfg: {} };
+var S = { idToken: null, refresh: null, exp: 0, ads: [], cfg: {}, geo: [] };
+var COUNTRIES = [['BD','বাংলাদেশ'],['IN','ভারত'],['PK','পাকিস্তান'],['NP','নেপাল'],['LK','শ্রীলঙ্কা'],['SA','সৌদি আরব'],['AE','সংযুক্ত আরব আমিরাত'],['QA','কাতার'],['KW','কুয়েত'],['OM','ওমান'],['MY','মালয়েশিয়া'],['SG','সিঙ্গাপুর'],['GB','যুক্তরাজ্য'],['US','যুক্তরাষ্ট্র'],['CA','কানাডা'],['AU','অস্ট্রেলিয়া'],['IT','ইতালি'],['JP','জাপান'],['KR','দক্ষিণ কোরিয়া']];
+var DISTRICTS = window.SCICAL_DISTRICTS || [];
 
 /* ---------- Firestore মান রূপান্তর ---------- */
 function enc(v) {
@@ -275,14 +291,59 @@ function renderAds() {
     return '<div class="ad ' + (a.active ? '' : 'off') + '"><h3>' + esc(a.title || '(নামহীন)') + '</h3>' +
       '<div class="meta"><span class="pill ' + (live ? 'on' : 'off') + '">' + (live ? 'চলছে' : (a.active ? 'সময় নয়' : 'বন্ধ')) + '</span>' +
       esc(a.text || '') + '<br>📅 ' + esc(a.start || 'শুরু নেই') + ' → ' + esc(a.end || 'শেষ নেই') +
-      ' · 🌐 ' + (a.lang === 'bn' ? 'বাংলা' : a.lang === 'en' ? 'English' : 'সবাই') + ' · ⚖️ ' + (a.weight || 1) + '<br>' +
+      ' · 🌐 ' + (a.lang === 'bn' ? 'বাংলা' : a.lang === 'en' ? 'English' : 'সবাই') + ' · ⚖️ ' + (a.weight || 1) + '<br>📍 ' + (geoParse(a.geo).length ? esc(geoParse(a.geo).map(geoLabel).join(' | ')) : 'সব জায়গা') + '<br>' +
       '👁 ' + v + ' ভিউ · 👆 ' + c + ' ক্লিক · ' + (v ? (c * 100 / v).toFixed(1) : '0') + '% CTR</div>' +
       '<div class="row" style="margin-top:8px"><button class="btn ghost sm" onclick="editAd(\'' + a.id + '\')">✏️ সম্পাদনা</button>' +
       '<button class="btn ghost sm" onclick="toggleAd(\'' + a.id + '\')">' + (a.active ? '⏸ বন্ধ' : '▶ চালু') + '</button>' +
       '<button class="btn bad sm" onclick="delAd(\'' + a.id + '\')">🗑 মুছুন</button></div></div>';
   }).join('') : '<div class="card meta">এখনো কোনো বিজ্ঞাপন নেই। ওপরের ফর্মে যোগ করুন।</div>';
 }
+/* ---------- এলাকা (geo) ---------- */
+function cLabel(c) { for (var i = 0; i < COUNTRIES.length; i++) if (COUNTRIES[i][0] === c) return COUNTRIES[i][1]; return c; }
+function geoLabel(t) {
+  var p = String(t).split('/'), out = [cLabel(p[0])];
+  if (p[1]) { var d = DISTRICTS.filter(function (x) { return x.en === p[1]; })[0]; out.push(d ? d.bn : p[1]); }
+  if (p[2]) out.push(p[2]);
+  return out.join(' › ');
+}
+function geoParse(s) { return String(s || '').split(';').map(function (x) { return x.trim(); }).filter(Boolean); }
+function renderGeo() {
+  $('geoChips').innerHTML = S.geo.length ? S.geo.map(function (t, i) { return '<span class="chip">' + esc(geoLabel(t)) + '<b onclick="delGeo(' + i + ')">✕</b></span>'; }).join('')
+    : '<small>🌍 সব জায়গায় দেখাবে</small>';
+}
+function initGeoForm() {
+  $('gCountry').innerHTML = '<option value="">দেশ বেছে নিন…</option>' + COUNTRIES.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + ' (' + c[0] + ')</option>'; }).join('') + '<option value="__other">অন্য দেশ (কোড লিখব)</option>';
+  var groups = {}, order = [];
+  DISTRICTS.forEach(function (d) { if (!groups[d.div]) { groups[d.div] = []; order.push(d.div); } groups[d.div].push(d); });
+  $('gDist').innerHTML = '<option value="">সব জেলা</option>' + order.map(function (g) {
+    return '<optgroup label="' + esc(g) + ' বিভাগ">' + groups[g].map(function (d) { return '<option value="' + esc(d.en) + '">' + esc(d.bn) + ' (' + esc(d.en) + ')</option>'; }).join('') + '</optgroup>';
+  }).join('');
+  renderGeo();
+}
+function geoCountryChange() {
+  var c = $('gCountry').value;
+  $('gDist').classList.toggle('hide', c !== 'BD');
+  $('gOther').classList.toggle('hide', c !== '__other');
+  if (c !== 'BD') { $('gDist').value = ''; $('gUpa').value = ''; $('gUpa').classList.add('hide'); }
+}
+function geoDistChange() { var has = !!$('gDist').value; $('gUpa').classList.toggle('hide', !has); if (!has) $('gUpa').value = ''; }
+function addGeo() {
+  var c = $('gCountry').value;
+  if (c === '__other') c = $('gOther').value.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return toast('আগে একটি দেশ বেছে নিন (বা ২ অক্ষরের কোড দিন)।', false);
+  var t = c, d = c === 'BD' ? $('gDist').value : '';
+  if (d) {
+    t += '/' + d;
+    var u = $('gUpa').value.replace(/[;\/]/g, ' ').split(',').map(function (x) { return x.trim().replace(/\s+/g, ' '); }).filter(Boolean).join(', ');
+    if (u) t += '/' + u;
+  }
+  if (S.geo.indexOf(t) < 0) S.geo.push(t);
+  $('gUpa').value = ''; renderGeo();
+}
+function delGeo(i) { S.geo.splice(i, 1); renderGeo(); }
+
 function resetAd() {
+  S.geo = []; renderGeo();
   ['aId', 'aTitle', 'aText', 'aImg', 'aLink', 'aStart', 'aEnd'].forEach(function (i) { $(i).value = ''; });
   $('aLang').value = 'all'; $('aWeight').value = 1; $('aActive').checked = true; $('adFormTitle').textContent = 'নতুন বিজ্ঞাপন';
 }
@@ -291,6 +352,7 @@ function editAd(id) {
   $('aId').value = a.id; $('aTitle').value = a.title || ''; $('aText').value = a.text || ''; $('aImg').value = a.imageUrl || '';
   $('aLink').value = a.linkUrl || ''; $('aStart').value = a.start || ''; $('aEnd').value = a.end || '';
   $('aLang').value = a.lang || 'all'; $('aWeight').value = a.weight || 1; $('aActive').checked = !!a.active;
+  S.geo = geoParse(a.geo); renderGeo();
   $('adFormTitle').textContent = 'বিজ্ঞাপন সম্পাদনা'; $('adForm').scrollIntoView({ behavior: 'smooth' });
 }
 function okUrl(u) { return /^https:\/\/\S+$/i.test(u); }
@@ -303,7 +365,8 @@ function saveAd() {
   var id = $('aId').value;
   var f = {
     title: $('aTitle').value.trim(), text: text, imageUrl: img, linkUrl: link, start: $('aStart').value, end: $('aEnd').value,
-    lang: $('aLang').value, weight: Math.min(10, Math.max(1, +$('aWeight').value || 1)), active: $('aActive').checked
+    lang: $('aLang').value, weight: Math.min(10, Math.max(1, +$('aWeight').value || 1)), active: $('aActive').checked,
+    geo: S.geo.join(';')
   };
   var fields = {}; for (var k in f) fields[k] = enc(f[k]);
   var p;
@@ -365,6 +428,7 @@ function saveUpd() {
 /* ---------- শুরু ---------- */
 function reloadAll() { loadStats(); loadAds().catch(function () {}); loadCfg().catch(function () {}); }
 function enter() { $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); reloadAll(); }
+initGeoForm();
 (function init() {
   if (!API || !PID) { $('vLogin').classList.remove('hide'); $('cfgWarn').classList.remove('hide'); return; }
   var rt = null; try { rt = sessionStorage.getItem('scical_rt'); } catch (e) {}
