@@ -109,6 +109,16 @@ small{color:var(--mut)}
       <div class="sw"><div><h2 style="margin:0">বিজ্ঞাপন বাধ্যতামূলক</h2><small>চালু করলে: গ্রাফিং স্টুডিও, সমীকরণ, ম্যাচ, কনস্ট্যান্ট ও সূত্রাবলী — বিজ্ঞাপনের ৫ সেকেন্ড পুরো না দেখলে এগুলো ব্যবহার করা যাবে না। বন্ধ থাকলে আগের মতোই (বিজ্ঞাপন আসে, কিন্তু সুবিধা আটকায় না)।</small></div>
         <input type="checkbox" id="adRequired" onchange="saveRequired()"></div>
     </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px">বিজ্ঞাপনের বিরতি (মিনিট)</h2>
+      <small>একটি বিজ্ঞাপন দেখানোর পর কত মিনিট আর বিজ্ঞাপন আসবে না। ০ দিলে প্রতিবার ট্যাবে ঢুকলেই আসবে। ডিফল্ট ৩০।</small>
+      <div class="row" style="margin-top:8px"><input id="adGap" type="number" min="0" max="1440" step="1" value="30" inputmode="numeric"><button class="btn ok" style="flex:0 0 auto" onclick="saveGap()">💾 সেভ</button></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px">বিজ্ঞাপন দেখার সময় (সেকেন্ড)</h2>
+      <small>বিজ্ঞাপন আসার পর কত সেকেন্ড গোনা চলবে; এর আগে বন্ধ করা যাবে না। ১ থেকে ৬০, ডিফল্ট ৫।</small>
+      <div class="row" style="margin-top:8px"><input id="adSec" type="number" min="1" max="60" step="1" value="5" inputmode="numeric"><button class="btn ok" style="flex:0 0 auto" onclick="saveSec()">💾 সেভ</button></div>
+    </div>
     <div class="card" id="adForm">
       <h2 id="adFormTitle">নতুন বিজ্ঞাপন</h2>
       <input type="hidden" id="aId">
@@ -320,6 +330,8 @@ function loadCfg() {
     var c = S.cfg, a = c.announcement || {}, u = c.update || {};
     $('adsEnabled').checked = c.adsEnabled !== false;
     $('adRequired').checked = c.adRequired === true;
+    $('adSec').value = (typeof c.adSeconds === 'number') ? c.adSeconds : 5;
+    $('adGap').value = (typeof c.adGapMin === 'number') ? c.adGapMin : 30;
     $('nText').value = a.text || ''; $('nActive').checked = !!a.active;
     $('uVer').value = u.version || ''; $('uUrl').value = u.url || ''; $('uNote').value = u.note || ''; $('uActive').checked = !!u.active;
   });
@@ -331,6 +343,18 @@ function patchCfg(path, value, msg) {
 }
 function saveMaster() { patchCfg('adsEnabled', $('adsEnabled').checked, $('adsEnabled').checked ? 'বিজ্ঞাপন চালু হয়েছে' : 'সব বিজ্ঞাপন বন্ধ হয়েছে'); }
 function saveRequired() { patchCfg('adRequired', $('adRequired').checked, $('adRequired').checked ? 'বিজ্ঞাপন এখন বাধ্যতামূলক' : 'বিজ্ঞাপন আর বাধ্যতামূলক নয়'); }
+function saveGap() {
+  var n = parseInt($('adGap').value, 10);
+  if (isNaN(n) || n < 0 || n > 1440) return toast('০ থেকে ১৪৪০ এর মধ্যে একটি সংখ্যা দিন।', false);
+  $('adGap').value = n;
+  patchCfg('adGapMin', n, 'বিরতি ' + n + ' মিনিট করা হয়েছে');
+}
+function saveSec() {
+  var n = parseInt($('adSec').value, 10);
+  if (isNaN(n) || n < 1 || n > 60) return toast('১ থেকে ৬০ এর মধ্যে একটি সংখ্যা দিন।', false);
+  $('adSec').value = n;
+  patchCfg('adSeconds', n, 'বিজ্ঞাপনের সময় ' + n + ' সেকেন্ড করা হয়েছে');
+}
 function saveAnn() { patchCfg('announcement', { text: $('nText').value.trim(), active: $('nActive').checked, id: Date.now() }, 'ঘোষণা প্রকাশিত'); }
 function saveUpd() {
   var url = $('uUrl').value.trim();
