@@ -84,14 +84,23 @@ small{color:var(--mut)}
   <div id="tStats">
     <div class="card"><h2>ব্যবহারকারী</h2>
       <div class="grid">
-        <div class="stat"><b id="sTotal">–</b><span>মোট ইনস্টল</span></div>
+        <div class="stat"><b id="sTotal">–</b><span>মোট ফোন (অনন্য)</span></div>
         <div class="stat"><b id="sDay">–</b><span>আজ সক্রিয়</span></div>
         <div class="stat"><b id="sWeek">–</b><span>৭ দিনে সক্রিয়</span></div>
         <div class="stat"><b id="sMonth">–</b><span>৩০ দিনে সক্রিয়</span></div>
         <div class="stat"><b id="sBn">–</b><span>বাংলা ব্যবহারকারী</span></div>
         <div class="stat"><b id="sEn">–</b><span>English ব্যবহারকারী</span></div>
       </div>
-      <small>প্রতিবার অ্যাপ খোলার সময় ইন্টারনেট থাকলে একবার গণনা হয়। অফলাইনে খুললে গণনা হয় না।</small>
+      <small>একই ফোনে বারবার ডাউনলোড, আপডেট বা নতুন করে ইনস্টল করলেও সেই ফোন একবারই গণনা হয়। ইন্টারনেট চালু থাকলে অ্যাপ খোলার সময় গণনা হয়, অফলাইনে হয় না। (ফোনের মডেল, স্ক্রিন ইত্যাদি মিলিয়ে চেনা হয় বলে একই মডেলের দুটি হুবহু একই রকম ফোন খুব কম ক্ষেত্রে একটি হিসেবে ধরা পড়তে পারে।)</small>
+    </div>
+    <div class="card"><h2>⏱ ব্যবহারের সময় (সবাই মিলে)</h2>
+      <div class="grid">
+        <div class="stat"><b id="uToday">–</b><span>আজ মোট</span></div>
+        <div class="stat"><b id="uAvg">–</b><span>আজ গড় (প্রতি সক্রিয় ফোনে)</span></div>
+        <div class="stat"><b id="uWeek">–</b><span>৭ দিনে মোট</span></div>
+        <div class="stat"><b id="uMonth">–</b><span>৩০ দিনে মোট</span></div>
+      </div>
+      <small>অ্যাপ সামনে খোলা থাকা সময় গোনা হয়। অফলাইনে ব্যবহার করলে ইন্টারনেট ফিরলে (অ্যাপ বন্ধ থাকলেও) স্বয়ংক্রিয়ভাবে যোগ হয় এবং ব্যবহারের দিনেই বসে — তাই আজকের সংখ্যা পরে একটু বাড়তে পারে।</small>
     </div>
     <div class="card"><h2>বিজ্ঞাপন (মোট)</h2>
       <div class="grid">
@@ -262,7 +271,7 @@ function since(days) {
 function langF(l) { return { fieldFilter: { field: { fieldPath: 'lang' }, op: 'EQUAL', value: { stringValue: l } } }; }
 function loadStats() {
   [[null, 'sTotal'], [since(0), 'sDay'], [since(6), 'sWeek'], [since(29), 'sMonth'], [langF('bn'), 'sBn'], [langF('en'), 'sEn']].forEach(function (p) {
-    count(p[0]).then(function (n) { $(p[1]).textContent = n; }).catch(function () {});
+    count(p[0]).then(function (n) { $(p[1]).textContent = n; if (p[1] === 'sDay') { S.activeToday = n; setAvg(); } }).catch(function () {});
   });
 }
 function adTotals() {
@@ -273,6 +282,24 @@ function adTotals() {
 }
 function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
 function isLive(a, t) { return a.active && (!a.start || t >= a.start) && (!a.end || t <= a.end); }
+
+/* ---------- ব্যবহারের সময় ---------- */
+function dayStr(off) { var d = new Date(); d.setDate(d.getDate() - off); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function fmtT(s) { s = Math.round(s); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + ' ঘ ' + m + ' মি' : (m ? m + ' মি' : s + ' সে'); }
+function setAvg() {
+  var n = S.activeToday;
+  $('uAvg').textContent = (S.usageToday != null && n > 0) ? fmtT(S.usageToday / n) : '–';
+}
+function loadUsage() {
+  var names = [], i;
+  for (i = 0; i < 30; i++) names.push('projects/' + PID + '/databases/(default)/documents/usage/' + dayStr(i));
+  return fs(':batchGet', { method: 'POST', body: JSON.stringify({ documents: names }) }).then(function (r) { return r.json(); }).then(function (j) {
+    var by = {}; (Array.isArray(j) ? j : []).forEach(function (x) { if (x.found) by[x.found.name.split('/').pop()] = decF(x.found.fields || {}).secs || 0; });
+    var t = by[dayStr(0)] || 0, w = 0, m = 0;
+    for (i = 0; i < 30; i++) { var v = by[dayStr(i)] || 0; m += v; if (i < 7) w += v; }
+    S.usageToday = t; $('uToday').textContent = fmtT(t); $('uWeek').textContent = fmtT(w); $('uMonth').textContent = fmtT(m); setAvg();
+  });
+}
 
 /* ---------- বিজ্ঞাপন ---------- */
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -420,7 +447,7 @@ function saveUpd() {
 }
 
 /* ---------- শুরু ---------- */
-function reloadAll() { loadStats(); loadAds().catch(function () {}); loadCfg().catch(function () {}); }
+function reloadAll() { loadStats(); loadUsage().catch(function () {}); loadAds().catch(function () {}); loadCfg().catch(function () {}); }
 function enter() { $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); reloadAll(); }
 initGeoForm();
 (function init() {
