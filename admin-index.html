@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sci Cal মাস্টার কন্ট্রোল</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#020617">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<script src="config.js"></script>
+<script src="geodata.js"></script>
+<style>
+*{box-sizing:border-box}
+:root{--bg:#020617;--card:#0f172a;--line:#1e293b;--tx:#e2e8f0;--mut:#94a3b8;--pri:#4f46e5;--cy:#22d3ee;--ok:#10b981;--bad:#ef4444;--warn:#f59e0b}
+body{margin:0;background:radial-gradient(circle at top,#0f172a,#020617);color:var(--tx);font-family:'Hind Siliguri','Noto Sans Bengali','Nirmala UI',system-ui,sans-serif;min-height:100vh;font-size:14px}
+.wrap{max-width:720px;margin:0 auto;padding:12px 16px 60px}
+h1{font-size:18px;margin:0;color:var(--cy)}
+h2{font-size:15px;margin:0 0 8px;color:var(--warn)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0 10px;border-bottom:1px solid var(--line);margin-bottom:10px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:8px}
+.tab{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:10px;padding:8px 12px;white-space:nowrap;cursor:pointer;font:inherit;font-weight:700}
+.tab.on{background:var(--pri);color:#fff;border-color:#818cf8}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.stat{background:#07101f;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-size:24px;color:var(--cy)}
+.stat span{font-size:12px;color:var(--mut)}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px;font-weight:700}
+input,select,textarea{width:100%;background:#07101f;border:1px solid #334155;color:var(--tx);border-radius:10px;padding:9px 10px;font:inherit}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#818cf8}
+textarea{min-height:64px;resize:vertical}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.btn{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+.btn.ok{background:var(--ok)}.btn.bad{background:#7f1d1d}.btn.ghost{background:#1e293b;color:var(--tx)}
+.btn.sm{padding:5px 10px;font-size:12px}
+.ad{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:#07101f}
+.ad.off{opacity:.55}
+.ad h3{margin:0 0 3px;font-size:14px}
+.meta{font-size:12px;color:var(--mut);line-height:1.6}
+.pill{display:inline-block;border-radius:99px;padding:1px 8px;font-size:11px;font-weight:700;margin-right:4px}
+.pill.on{background:#064e3b;color:#6ee7b7}.pill.off{background:#3f1d1d;color:#fca5a5}
+.msg{padding:8px 10px;border-radius:10px;margin-bottom:8px;font-size:13px}
+.msg.err{background:#3f1d1d;color:#fca5a5}.msg.ok{background:#064e3b;color:#6ee7b7}
+.hide{display:none!important}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sw input{width:auto;transform:scale(1.4)}
+small{color:var(--mut)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{background:#0c4a6e;color:#bae6fd;border-radius:99px;padding:3px 6px 3px 10px;font-size:12px;display:inline-flex;align-items:center;gap:6px}
+.chip b{cursor:pointer;background:#082f49;border-radius:99px;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- লগইন -->
+<div id="vLogin" class="hide">
+  <div class="top"><h1>🔐 Sci Cal মাস্টার কন্ট্রোল</h1></div>
+  <div id="cfgWarn" class="msg err hide">প্রথমে <b>config.js</b> ফাইলে Firebase-এর <b>apiKey</b> ও <b>projectId</b> বসান।</div>
+  <div class="card">
+    <label>ইমেইল</label><input id="lEmail" type="email" autocomplete="username">
+    <label>পাসওয়ার্ড</label><input id="lPass" type="password" autocomplete="current-password">
+    <div id="lErr" class="msg err hide" style="margin-top:8px"></div>
+    <div style="margin-top:10px"><button class="btn" style="width:100%" onclick="login()">প্রবেশ করুন</button></div>
+  </div>
+</div>
+
+<!-- ড্যাশবোর্ড -->
+<div id="vApp" class="hide">
+  <div class="top"><h1>📊 মাস্টার কন্ট্রোল</h1><div><button class="btn ghost sm" onclick="reloadAll()">↻ রিফ্রেশ</button> <button class="btn ghost sm" onclick="logout()">বের হন</button></div></div>
+  <div id="toast" class="msg hide"></div>
+  <div class="tabs">
+    <button class="tab on" data-t="stats" onclick="tab('stats')">📈 পরিসংখ্যান</button>
+    <button class="tab" data-t="ads" onclick="tab('ads')">📣 বিজ্ঞাপন</button>
+    <button class="tab" data-t="ann" onclick="tab('ann')">📢 ঘোষণা</button>
+    <button class="tab" data-t="upd" onclick="tab('upd')">🔔 আপডেট</button>
+  </div>
+
+  <!-- পরিসংখ্যান -->
+  <div id="tStats">
+    <div class="card"><h2>ব্যবহারকারী</h2>
+      <div class="grid">
+        <div class="stat"><b id="sTotal">–</b><span>মোট ফোন (অনন্য)</span></div>
+        <div class="stat"><b id="sDay">–</b><span>আজ সক্রিয়</span></div>
+        <div class="stat"><b id="sWeek">–</b><span>৭ দিনে সক্রিয়</span></div>
+        <div class="stat"><b id="sMonth">–</b><span>৩০ দিনে সক্রিয়</span></div>
+        <div class="stat"><b id="sBn">–</b><span>বাংলা ব্যবহারকারী</span></div>
+        <div class="stat"><b id="sEn">–</b><span>English ব্যবহারকারী</span></div>
+      </div>
+      <small>একই ফোনে বারবার ডাউনলোড, আপডেট বা নতুন করে ইনস্টল করলেও সেই ফোন একবারই গণনা হয়। ইন্টারনেট চালু থাকলে অ্যাপ খোলার সময় গণনা হয়, অফলাইনে হয় না। (ফোনের মডেল, স্ক্রিন ইত্যাদি মিলিয়ে চেনা হয় বলে একই মডেলের দুটি হুবহু একই রকম ফোন খুব কম ক্ষেত্রে একটি হিসেবে ধরা পড়তে পারে।)</small>
+    </div>
+    <div class="card"><h2>📱 অ্যাপের সংস্করণ অনুযায়ী ফোন</h2>
+      <div id="verList"><small>লোড হচ্ছে…</small></div>
+      <small>প্রতিটি ফোন তার সর্বশেষ চালানো সংস্করণে গোনা হয়। "৭ দিনে সক্রিয়" মানে গত ৭ দিনে অন্তত একবার ইন্টারনেটে অ্যাপ খুলেছে। সংস্করণ বদলায় আপডেটের পর অ্যাপ প্রথমবার অনলাইনে খুললে।</small>
+    </div>
+    <div class="card"><h2>⏱ ব্যবহারের সময় (সবাই মিলে)</h2>
+      <div class="grid">
+        <div class="stat"><b id="uToday">–</b><span>আজ মোট</span></div>
+        <div class="stat"><b id="uAvg">–</b><span>আজ গড় (প্রতি সক্রিয় ফোনে)</span></div>
+        <div class="stat"><b id="uWeek">–</b><span>৭ দিনে মোট</span></div>
+        <div class="stat"><b id="uMonth">–</b><span>৩০ দিনে মোট</span></div>
+      </div>
+      <small>অ্যাপ সামনে খোলা থাকা সময় গোনা হয়। অফলাইনে ব্যবহার করলে ইন্টারনেট ফিরলে (অ্যাপ বন্ধ থাকলেও) স্বয়ংক্রিয়ভাবে যোগ হয় এবং ব্যবহারের দিনেই বসে — তাই আজকের সংখ্যা পরে একটু বাড়তে পারে।</small>
+    </div>
+    <div class="card"><h2>বিজ্ঞাপন (মোট)</h2>
+      <div class="grid">
+        <div class="stat"><b id="sViews">–</b><span>মোট ভিউ</span></div>
+        <div class="stat"><b id="sClicks">–</b><span>মোট ক্লিক</span></div>
+        <div class="stat"><b id="sCtr">–</b><span>ক্লিক হার (CTR)</span></div>
+        <div class="stat"><b id="sActive">–</b><span>চলমান বিজ্ঞাপন</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- বিজ্ঞাপন -->
+  <div id="tAds" class="hide">
+    <div class="card">
+      <div class="sw"><div><h2 style="margin:0">সব বিজ্ঞাপন চালু</h2><small>বন্ধ করলে কারও ফোনে কোনো বিজ্ঞাপন দেখাবে না</small></div>
+        <input type="checkbox" id="adsEnabled" onchange="saveMaster()"></div>
+    </div>
+    <div class="card">
+      <div class="sw"><div><h2 style="margin:0">বিজ্ঞাপন বাধ্যতামূলক</h2><small>চালু করলে: গ্রাফিং স্টুডিও, সমীকরণ, ম্যাচ, কনস্ট্যান্ট ও সূত্রাবলী — বিজ্ঞাপনের ৫ সেকেন্ড পুরো না দেখলে এগুলো ব্যবহার করা যাবে না। বন্ধ থাকলে আগের মতোই (বিজ্ঞাপন আসে, কিন্তু সুবিধা আটকায় না)।</small></div>
+        <input type="checkbox" id="adRequired" onchange="saveRequired()"></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px">বিজ্ঞাপনের বিরতি (মিনিট)</h2>
+      <small>একটি বিজ্ঞাপন দেখানোর পর কত মিনিট আর বিজ্ঞাপন আসবে না। ০ দিলে প্রতিবার ট্যাবে ঢুকলেই আসবে। ডিফল্ট ৩০।</small>
+      <div class="row" style="margin-top:8px"><input id="adGap" type="number" min="0" max="1440" step="1" value="30" inputmode="numeric"><button class="btn ok" style="flex:0 0 auto" onclick="saveGap()">💾 সেভ</button></div>
+    </div>
+    <div class="card">
+      <h2 style="margin:0 0 4px">বিজ্ঞাপন দেখার সময় (সেকেন্ড)</h2>
+      <small>বিজ্ঞাপন আসার পর কত সেকেন্ড গোনা চলবে; এর আগে বন্ধ করা যাবে না। ১ থেকে ৬০, ডিফল্ট ৫।</small>
+      <div class="row" style="margin-top:8px"><input id="adSec" type="number" min="1" max="60" step="1" value="5" inputmode="numeric"><button class="btn ok" style="flex:0 0 auto" onclick="saveSec()">💾 সেভ</button></div>
+    </div>
+    <div class="card" id="adForm">
+      <h2 id="adFormTitle">নতুন বিজ্ঞাপন</h2>
+      <input type="hidden" id="aId">
+      <label>শিরোনাম (শুধু আপনার জন্য — বিজ্ঞাপনদাতার নাম)</label><input id="aTitle">
+      <label>বিজ্ঞাপনের লেখা (ব্যবহারকারী দেখবে)</label><textarea id="aText" maxlength="140"></textarea>
+      <label>ছবির লিংক (ঐচ্ছিক — https://...)</label><input id="aImg" inputmode="url" placeholder="https://...jpg">
+      <label>ক্লিক করলে যে লিংকে যাবে *</label><input id="aLink" inputmode="url" placeholder="https://...">
+      <div class="row">
+        <div><label>শুরুর তারিখ</label><input id="aStart" type="date"></div>
+        <div><label>শেষ তারিখ</label><input id="aEnd" type="date"></div>
+      </div>
+      <div class="row">
+        <div><label>ভাষা</label><select id="aLang"><option value="all">সবার জন্য</option><option value="bn">শুধু বাংলা</option><option value="en">শুধু English</option></select></div>
+        <div><label>গুরুত্ব (১–১০, বেশি = বেশিবার)</label><input id="aWeight" type="number" min="1" max="10" value="1"></div>
+      </div>
+      <label>📍 কোথায় দেখাবে (কিছু না যোগ করলে = সব জায়গায়)</label>
+      <div id="geoChips" class="chips"></div>
+      <div class="row">
+        <select id="gCountry" onchange="geoCountryChange()"></select>
+        <select id="gDist" class="hide"></select>
+      </div>
+      <input id="gOther" class="hide" placeholder="দেশের কোড (২ অক্ষর, যেমন MY, SG, US)" maxlength="2" style="margin-top:6px;text-transform:uppercase">
+      <button class="btn ghost sm" style="margin-top:6px" onclick="addGeo()">➕ এই এলাকা যোগ করুন</button>
+      <small style="display:block;margin-top:4px">শুধু দেশ বাছলে পুরো দেশ, জেলা বাছলে পুরো জেলা। ব্যবহারকারীর এলাকা ইন্টারনেট ঠিকানা (IP) থেকে আনুমানিক ধরা হয়, তাই জেলা সবসময় নির্ভুল নাও হতে পারে (মোবাইল ডেটায় অনেক সময় ঢাকা আসে)। এলাকা না জানা ব্যবহারকারী শুধু "সব জায়গার" বিজ্ঞাপন দেখবে।</small>
+      <div class="sw" style="margin-top:10px"><span>চালু</span><input type="checkbox" id="aActive" checked></div>
+      <div class="row" style="margin-top:10px"><button class="btn ok" onclick="saveAd()">💾 সেভ করুন</button><button class="btn ghost" onclick="resetAd()">নতুন ফর্ম</button></div>
+    </div>
+    <div id="adList"></div>
+  </div>
+
+  <!-- ঘোষণা -->
+  <div id="tAnn" class="hide">
+    <div class="card"><h2>সবার জন্য ঘোষণা</h2>
+      <label>বার্তা (সবার ক্যালকুলেটরের ওপরে দেখাবে)</label><textarea id="nText" maxlength="160"></textarea>
+      <div class="sw" style="margin-top:10px"><span>চালু</span><input type="checkbox" id="nActive"></div>
+      <small>নতুন করে সেভ করলে যারা আগের ঘোষণা বন্ধ করেছিল তারাও আবার দেখবে।</small>
+      <div style="margin-top:10px"><button class="btn ok" onclick="saveAnn()">💾 প্রকাশ করুন</button></div>
+    </div>
+  </div>
+
+  <!-- আপডেট -->
+  <div id="tUpd" class="hide">
+    <div class="card"><h2>আপডেট নোটিশ</h2>
+      <small>এখনকার অ্যাপের সংস্করণ <b>1.0.0</b>। এর থেকে আলাদা সংস্করণ লিখলে সবার ফোনে "আপডেট" বাটন আসবে।</small>
+      <label>নতুন সংস্করণ (যেমন 1.1.0)</label><input id="uVer">
+      <label>ডাউনলোড লিংক (APK বা সাইটের লিংক)</label><input id="uUrl" inputmode="url" placeholder="https://...">
+      <label>কী নতুন হয়েছে (ছোট করে)</label><textarea id="uNote" maxlength="200"></textarea>
+      <div class="sw" style="margin-top:10px"><span>চালু</span><input type="checkbox" id="uActive"></div>
+      <div style="margin-top:10px"><button class="btn ok" onclick="saveUpd()">💾 প্রকাশ করুন</button></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+var CFG = window.SCICAL_CFG || {};
+var API = CFG.apiKey, PID = CFG.projectId;
+var BASE = 'https://firestore.googleapis.com/v1/projects/' + PID + '/databases/(default)/documents';
+var $ = function (i) { return document.getElementById(i); };
+var S = { idToken: null, refresh: null, exp: 0, ads: [], cfg: {}, geo: [] };
+var COUNTRIES = [['BD','বাংলাদেশ'],['IN','ভারত'],['PK','পাকিস্তান'],['NP','নেপাল'],['LK','শ্রীলঙ্কা'],['SA','সৌদি আরব'],['AE','সংযুক্ত আরব আমিরাত'],['QA','কাতার'],['KW','কুয়েত'],['OM','ওমান'],['MY','মালয়েশিয়া'],['SG','সিঙ্গাপুর'],['GB','যুক্তরাজ্য'],['US','যুক্তরাষ্ট্র'],['CA','কানাডা'],['AU','অস্ট্রেলিয়া'],['IT','ইতালি'],['JP','জাপান'],['KR','দক্ষিণ কোরিয়া']];
+var DISTRICTS = window.SCICAL_DISTRICTS || [];
+
+/* ---------- Firestore মান রূপান্তর ---------- */
+function enc(v) {
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return { integerValue: String(Math.round(v)) };
+  if (v && typeof v === 'object') { var f = {}; for (var k in v) f[k] = enc(v[k]); return { mapValue: { fields: f } }; }
+  return { stringValue: String(v == null ? '' : v) };
+}
+function dec(v) {
+  if ('stringValue' in v) return v.stringValue;
+  if ('integerValue' in v) return parseInt(v.integerValue, 10);
+  if ('doubleValue' in v) return v.doubleValue;
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('mapValue' in v) return decF(v.mapValue.fields || {});
+  return null;
+}
+function decF(f) { var o = {}; for (var k in f) o[k] = dec(f[k]); return o; }
+
+/* ---------- অথেন্টিকেশন ---------- */
+function toast(t, ok) { var e = $('toast'); e.textContent = t; e.className = 'msg ' + (ok === false ? 'err' : 'ok'); setTimeout(function () { e.className = 'msg hide'; }, 3500); }
+function setSession(j) {
+  S.idToken = j.idToken || j.id_token; S.refresh = j.refreshToken || j.refresh_token;
+  S.exp = Date.now() + (parseInt(j.expiresIn || j.expires_in, 10) - 60) * 1000;
+  try { sessionStorage.setItem('scical_rt', S.refresh); } catch (e) {}
+}
+function login() {
+  $('lErr').classList.add('hide');
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + API, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: $('lEmail').value.trim(), password: $('lPass').value, returnSecureToken: true })
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    if (j.error) { $('lErr').textContent = 'ইমেইল বা পাসওয়ার্ড ঠিক নয়।'; $('lErr').classList.remove('hide'); return; }
+    setSession(j); enter();
+  }).catch(function () { $('lErr').textContent = 'ইন্টারনেট সংযোগ দেখুন।'; $('lErr').classList.remove('hide'); });
+}
+function logout() { try { sessionStorage.removeItem('scical_rt'); } catch (e) {} S.idToken = null; $('vApp').classList.add('hide'); $('vLogin').classList.remove('hide'); }
+function token() {
+  if (S.idToken && Date.now() < S.exp) return Promise.resolve(S.idToken);
+  return fetch('https://securetoken.googleapis.com/v1/token?key=' + API, {
+    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(S.refresh)
+  }).then(function (r) { return r.json(); }).then(function (j) {
+    if (j.error) { logout(); throw new Error('session'); } setSession(j); return S.idToken;
+  });
+}
+function fs(path, opt) {
+  return token().then(function (t) {
+    opt = opt || {}; opt.headers = Object.assign({ 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json' }, opt.headers || {});
+    return fetch(BASE + path, opt);
+  }).then(function (r) {
+    if (r.status === 403) { toast('অনুমতি নেই — Firestore rules-এ আপনার ইমেইল ঠিক আছে কি?', false); throw new Error('403'); }
+    return r;
+  });
+}
+
+/* ---------- ট্যাব ---------- */
+function tab(t) {
+  ['stats', 'ads', 'ann', 'upd'].forEach(function (x) { $('t' + x[0].toUpperCase() + x.slice(1)).classList.toggle('hide', x !== t); });
+  document.querySelectorAll('.tab').forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });
+}
+
+/* ---------- পরিসংখ্যান ---------- */
+function count(filter) {
+  var q = { from: [{ collectionId: 'installs' }] };
+  if (filter) q.where = filter;
+  return fs(':runAggregationQuery', { method: 'POST', body: JSON.stringify({ structuredAggregationQuery: { structuredQuery: q, aggregations: [{ alias: 'n', count: {} }] } }) })
+    .then(function (r) { return r.json(); }).then(function (j) {
+      try { return parseInt(j[0].result.aggregateFields.n.integerValue, 10); } catch (e) { return 0; }
+    });
+}
+function since(days) {
+  var d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - days);
+  return { fieldFilter: { field: { fieldPath: 'lastSeen' }, op: 'GREATER_THAN_OR_EQUAL', value: { timestampValue: d.toISOString() } } };
+}
+function langF(l) { return { fieldFilter: { field: { fieldPath: 'lang' }, op: 'EQUAL', value: { stringValue: l } } }; }
+function loadStats() {
+  [[null, 'sTotal'], [since(0), 'sDay'], [since(6), 'sWeek'], [since(29), 'sMonth'], [langF('bn'), 'sBn'], [langF('en'), 'sEn']].forEach(function (p) {
+    count(p[0]).then(function (n) { $(p[1]).textContent = n; if (p[1] === 'sDay') { S.activeToday = n; setAvg(); } }).catch(function () {});
+  });
+}
+function adTotals() {
+  var v = 0, c = 0, act = 0, t = today();
+  S.ads.forEach(function (a) { v += a.views || 0; c += a.clicks || 0; if (isLive(a, t)) act++; });
+  $('sViews').textContent = v; $('sClicks').textContent = c;
+  $('sCtr').textContent = v ? (c * 100 / v).toFixed(1) + '%' : '–'; $('sActive').textContent = act;
+}
+function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function isLive(a, t) { return a.active && (!a.start || t >= a.start) && (!a.end || t <= a.end); }
+
+/* ---------- সংস্করণ অনুযায়ী ফোন ---------- */
+function esc(x) { return String(x).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function loadVersions() {
+  var q = { from: [{ collectionId: 'installs' }], select: { fields: [{ fieldPath: 'ver' }, { fieldPath: 'lastSeen' }] }, limit: 20000 };
+  return fs(':runQuery', { method: 'POST', body: JSON.stringify({ structuredQuery: q }) }).then(function (r) { return r.json(); }).then(function (j) {
+    var wk = new Date(); wk.setHours(0, 0, 0, 0); wk.setDate(wk.getDate() - 6);
+    var by = {}, legacy = 0, total = 0;
+    (Array.isArray(j) ? j : []).forEach(function (x) {
+      if (!x.document) return;
+      var id = x.document.name.split('/').pop();
+      if (id.charAt(0) !== 'f') { legacy++; return; }          /* পুরনো পদ্ধতির আইডি আলাদা রাখা হয় */
+      var f = decF(x.document.fields || {}), v = f.ver || '?';
+      var o = by[v] || (by[v] = { n: 0, a: 0 });
+      o.n++; total++;
+      if (f.lastSeen && new Date(f.lastSeen) >= wk) o.a++;
+    });
+    var keys = Object.keys(by).sort(function (a, b) { return by[b].n - by[a].n; });
+    var html = '';
+    keys.forEach(function (k) {
+      var pct = total ? Math.round(by[k].n * 100 / total) : 0;
+      html += '<div class="ad" style="margin-bottom:6px"><div class="row" style="justify-content:space-between"><b style="font-size:16px">সংস্করণ ' + esc(k) + '</b><span><b style="color:var(--cy);font-size:18px">' + by[k].n + '</b> ফোন (' + pct + '%)</span></div>' +
+        '<div style="background:#07101f;border-radius:99px;height:8px;margin:6px 0"><div style="background:var(--pri);height:8px;border-radius:99px;width:' + pct + '%"></div></div>' +
+        '<small>গত ৭ দিনে সক্রিয়: ' + by[k].a + '</small></div>';
+    });
+    if (!keys.length) html = '<small>এখনো নতুন পদ্ধতির কোনো ফোনের তথ্য আসেনি।</small>';
+    if (legacy) html += '<small>পুরনো পদ্ধতির আইডি (আগের সংস্করণ): ' + legacy + 'টি — এগুলো এখানে গোনা হয়নি।</small>';
+    $('verList').innerHTML = html;
+  }).catch(function () { $('verList').innerHTML = '<small>লোড করা যায়নি।</small>'; });
+}
+
+/* ---------- ব্যবহারের সময় ---------- */
+function dayStr(off) { var d = new Date(); d.setDate(d.getDate() - off); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function fmtT(s) { s = Math.round(s); var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? h + ' ঘ ' + m + ' মি' : (m ? m + ' মি' : s + ' সে'); }
+function setAvg() {
+  var n = S.activeToday;
+  $('uAvg').textContent = (S.usageToday != null && n > 0) ? fmtT(S.usageToday / n) : '–';
+}
+function loadUsage() {
+  var names = [], i;
+  for (i = 0; i < 30; i++) names.push('projects/' + PID + '/databases/(default)/documents/usage/' + dayStr(i));
+  return fs(':batchGet', { method: 'POST', body: JSON.stringify({ documents: names }) }).then(function (r) { return r.json(); }).then(function (j) {
+    var by = {}; (Array.isArray(j) ? j : []).forEach(function (x) { if (x.found) by[x.found.name.split('/').pop()] = decF(x.found.fields || {}).secs || 0; });
+    var t = by[dayStr(0)] || 0, w = 0, m = 0;
+    for (i = 0; i < 30; i++) { var v = by[dayStr(i)] || 0; m += v; if (i < 7) w += v; }
+    S.usageToday = t; $('uToday').textContent = fmtT(t); $('uWeek').textContent = fmtT(w); $('uMonth').textContent = fmtT(m); setAvg();
+  });
+}
+
+/* ---------- বিজ্ঞাপন ---------- */
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function loadAds() {
+  return fs('/ads?pageSize=200').then(function (r) { return r.json(); }).then(function (j) {
+    S.ads = (j.documents || []).map(function (d) { var o = decF(d.fields || {}); o.id = d.name.split('/').pop(); return o; })
+      .sort(function (a, b) { return (b.start || '').localeCompare(a.start || ''); });
+    renderAds(); adTotals();
+  });
+}
+function renderAds() {
+  var t = today();
+  $('adList').innerHTML = S.ads.length ? S.ads.map(function (a) {
+    var live = isLive(a, t), v = a.views || 0, c = a.clicks || 0;
+    return '<div class="ad ' + (a.active ? '' : 'off') + '"><h3>' + esc(a.title || '(নামহীন)') + '</h3>' +
+      '<div class="meta"><span class="pill ' + (live ? 'on' : 'off') + '">' + (live ? 'চলছে' : (a.active ? 'সময় নয়' : 'বন্ধ')) + '</span>' +
+      esc(a.text || '') + '<br>📅 ' + esc(a.start || 'শুরু নেই') + ' → ' + esc(a.end || 'শেষ নেই') +
+      ' · 🌐 ' + (a.lang === 'bn' ? 'বাংলা' : a.lang === 'en' ? 'English' : 'সবাই') + ' · ⚖️ ' + (a.weight || 1) + '<br>📍 ' + (geoParse(a.geo).length ? esc(geoParse(a.geo).map(geoLabel).join(' | ')) : 'সব জায়গা') + '<br>' +
+      '👁 ' + v + ' ভিউ · 👆 ' + c + ' ক্লিক · ' + (v ? (c * 100 / v).toFixed(1) : '0') + '% CTR</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn ghost sm" onclick="editAd(\'' + a.id + '\')">✏️ সম্পাদনা</button>' +
+      '<button class="btn ghost sm" onclick="toggleAd(\'' + a.id + '\')">' + (a.active ? '⏸ বন্ধ' : '▶ চালু') + '</button>' +
+      '<button class="btn bad sm" onclick="delAd(\'' + a.id + '\')">🗑 মুছুন</button></div></div>';
+  }).join('') : '<div class="card meta">এখনো কোনো বিজ্ঞাপন নেই। ওপরের ফর্মে যোগ করুন।</div>';
+}
+/* ---------- এলাকা (geo) ---------- */
+function cLabel(c) { for (var i = 0; i < COUNTRIES.length; i++) if (COUNTRIES[i][0] === c) return COUNTRIES[i][1]; return c; }
+function geoLabel(t) {
+  var p = String(t).split('/'), out = [cLabel(p[0])];
+  if (p[1]) { var d = DISTRICTS.filter(function (x) { return x.en === p[1]; })[0]; out.push(d ? d.bn : p[1]); }
+  if (p[2]) out.push(p[2]);
+  return out.join(' › ');
+}
+function geoParse(s) { return String(s || '').split(';').map(function (x) { return x.trim(); }).filter(Boolean); }
+function renderGeo() {
+  $('geoChips').innerHTML = S.geo.length ? S.geo.map(function (t, i) { return '<span class="chip">' + esc(geoLabel(t)) + '<b onclick="delGeo(' + i + ')">✕</b></span>'; }).join('')
+    : '<small>🌍 সব জায়গায় দেখাবে</small>';
+}
+function initGeoForm() {
+  $('gCountry').innerHTML = '<option value="">দেশ বেছে নিন…</option>' + COUNTRIES.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + ' (' + c[0] + ')</option>'; }).join('') + '<option value="__other">অন্য দেশ (কোড লিখব)</option>';
+  var groups = {}, order = [];
+  DISTRICTS.forEach(function (d) { if (!groups[d.div]) { groups[d.div] = []; order.push(d.div); } groups[d.div].push(d); });
+  $('gDist').innerHTML = '<option value="">সব জেলা</option>' + order.map(function (g) {
+    return '<optgroup label="' + esc(g) + ' বিভাগ">' + groups[g].map(function (d) { return '<option value="' + esc(d.en) + '">' + esc(d.bn) + ' (' + esc(d.en) + ')</option>'; }).join('') + '</optgroup>';
+  }).join('');
+  renderGeo();
+}
+function geoCountryChange() {
+  var c = $('gCountry').value;
+  $('gDist').classList.toggle('hide', c !== 'BD');
+  $('gOther').classList.toggle('hide', c !== '__other');
+  if (c !== 'BD') $('gDist').value = '';
+}
+function addGeo() {
+  var c = $('gCountry').value;
+  if (c === '__other') c = $('gOther').value.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(c)) return toast('আগে একটি দেশ বেছে নিন (বা ২ অক্ষরের কোড দিন)।', false);
+  var t = c, d = c === 'BD' ? $('gDist').value : '';
+  if (d) t += '/' + d;
+  if (S.geo.indexOf(t) < 0) S.geo.push(t);
+  renderGeo();
+}
+function delGeo(i) { S.geo.splice(i, 1); renderGeo(); }
+
+function resetAd() {
+  S.geo = []; renderGeo();
+  ['aId', 'aTitle', 'aText', 'aImg', 'aLink', 'aStart', 'aEnd'].forEach(function (i) { $(i).value = ''; });
+  $('aLang').value = 'all'; $('aWeight').value = 1; $('aActive').checked = true; $('adFormTitle').textContent = 'নতুন বিজ্ঞাপন';
+}
+function editAd(id) {
+  var a = S.ads.filter(function (x) { return x.id === id; })[0]; if (!a) return;
+  $('aId').value = a.id; $('aTitle').value = a.title || ''; $('aText').value = a.text || ''; $('aImg').value = a.imageUrl || '';
+  $('aLink').value = a.linkUrl || ''; $('aStart').value = a.start || ''; $('aEnd').value = a.end || '';
+  $('aLang').value = a.lang || 'all'; $('aWeight').value = a.weight || 1; $('aActive').checked = !!a.active;
+  S.geo = geoParse(a.geo); renderGeo();
+  $('adFormTitle').textContent = 'বিজ্ঞাপন সম্পাদনা'; $('adForm').scrollIntoView({ behavior: 'smooth' });
+}
+function okUrl(u) { return /^https:\/\/\S+$/i.test(u); }
+function saveAd() {
+  var link = $('aLink').value.trim(), img = $('aImg').value.trim(), text = $('aText').value.trim();
+  if (!okUrl(link)) return toast('ক্লিক লিংক https:// দিয়ে শুরু হতে হবে।', false);
+  if (img && !okUrl(img)) return toast('ছবির লিংক https:// দিয়ে শুরু হতে হবে।', false);
+  if (!text && !img) return toast('লেখা বা ছবি অন্তত একটি দিন।', false);
+  if ($('aStart').value && $('aEnd').value && $('aEnd').value < $('aStart').value) return toast('শেষ তারিখ শুরুর আগে হতে পারে না।', false);
+  var id = $('aId').value;
+  var f = {
+    title: $('aTitle').value.trim(), text: text, imageUrl: img, linkUrl: link, start: $('aStart').value, end: $('aEnd').value,
+    lang: $('aLang').value, weight: Math.min(10, Math.max(1, +$('aWeight').value || 1)), active: $('aActive').checked,
+    geo: S.geo.join(';')
+  };
+  var fields = {}; for (var k in f) fields[k] = enc(f[k]);
+  var p;
+  if (id) {
+    var mask = Object.keys(f).map(function (k) { return 'updateMask.fieldPaths=' + k; }).join('&');
+    p = fs('/ads/' + id + '?' + mask, { method: 'PATCH', body: JSON.stringify({ fields: fields }) });
+  } else {
+    fields.views = enc(0); fields.clicks = enc(0);
+    p = fs('/ads', { method: 'POST', body: JSON.stringify({ fields: fields }) });
+  }
+  p.then(function (r) { if (!r.ok) throw 0; toast('সেভ হয়েছে ✅'); resetAd(); return loadAds(); }).catch(function () { toast('সেভ হয়নি।', false); });
+}
+function toggleAd(id) {
+  var a = S.ads.filter(function (x) { return x.id === id; })[0]; if (!a) return;
+  fs('/ads/' + id + '?updateMask.fieldPaths=active', { method: 'PATCH', body: JSON.stringify({ fields: { active: enc(!a.active) } }) })
+    .then(function () { return loadAds(); });
+}
+function delAd(id) { if (!confirm('এই বিজ্ঞাপন মুছে ফেলবেন? ভিউ/ক্লিকের হিসাবও চলে যাবে।')) return; fs('/ads/' + id, { method: 'DELETE' }).then(function () { toast('মুছে গেছে'); return loadAds(); }); }
+
+/* ---------- কনফিগ: মাস্টার সুইচ, ঘোষণা, আপডেট ---------- */
+function loadCfg() {
+  return fs('/config/app').then(function (r) { return r.status === 404 ? {} : r.json(); }).then(function (j) {
+    S.cfg = j.fields ? decF(j.fields) : {};
+    var c = S.cfg, a = c.announcement || {}, u = c.update || {};
+    $('adsEnabled').checked = c.adsEnabled !== false;
+    $('adRequired').checked = c.adRequired === true;
+    $('adSec').value = (typeof c.adSeconds === 'number') ? c.adSeconds : 5;
+    $('adGap').value = (typeof c.adGapMin === 'number') ? c.adGapMin : 30;
+    $('nText').value = a.text || ''; $('nActive').checked = !!a.active;
+    $('uVer').value = u.version || ''; $('uUrl').value = u.url || ''; $('uNote').value = u.note || ''; $('uActive').checked = !!u.active;
+  });
+}
+function patchCfg(path, value, msg) {
+  var fields = {}; fields[path] = enc(value);
+  fs('/config/app?updateMask.fieldPaths=' + path, { method: 'PATCH', body: JSON.stringify({ fields: fields }) })
+    .then(function (r) { if (!r.ok) throw 0; toast(msg + ' ✅'); }).catch(function () { toast('সেভ হয়নি।', false); });
+}
+function saveMaster() { patchCfg('adsEnabled', $('adsEnabled').checked, $('adsEnabled').checked ? 'বিজ্ঞাপন চালু হয়েছে' : 'সব বিজ্ঞাপন বন্ধ হয়েছে'); }
+function saveRequired() { patchCfg('adRequired', $('adRequired').checked, $('adRequired').checked ? 'বিজ্ঞাপন এখন বাধ্যতামূলক' : 'বিজ্ঞাপন আর বাধ্যতামূলক নয়'); }
+function saveGap() {
+  var n = parseInt($('adGap').value, 10);
+  if (isNaN(n) || n < 0 || n > 1440) return toast('০ থেকে ১৪৪০ এর মধ্যে একটি সংখ্যা দিন।', false);
+  $('adGap').value = n;
+  patchCfg('adGapMin', n, 'বিরতি ' + n + ' মিনিট করা হয়েছে');
+}
+function saveSec() {
+  var n = parseInt($('adSec').value, 10);
+  if (isNaN(n) || n < 1 || n > 60) return toast('১ থেকে ৬০ এর মধ্যে একটি সংখ্যা দিন।', false);
+  $('adSec').value = n;
+  patchCfg('adSeconds', n, 'বিজ্ঞাপনের সময় ' + n + ' সেকেন্ড করা হয়েছে');
+}
+function saveAnn() { patchCfg('announcement', { text: $('nText').value.trim(), active: $('nActive').checked, id: Date.now() }, 'ঘোষণা প্রকাশিত'); }
+function saveUpd() {
+  var url = $('uUrl').value.trim();
+  if ($('uActive').checked && (!$('uVer').value.trim() || !okUrl(url))) return toast('সংস্করণ ও https:// লিংক দিন।', false);
+  patchCfg('update', { version: $('uVer').value.trim(), url: url, note: $('uNote').value.trim(), active: $('uActive').checked }, 'আপডেট নোটিশ প্রকাশিত');
+}
+
+/* ---------- শুরু ---------- */
+function reloadAll() { loadStats(); loadVersions(); loadUsage().catch(function () {}); loadAds().catch(function () {}); loadCfg().catch(function () {}); }
+function enter() { $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); reloadAll(); }
+initGeoForm();
+(function init() {
+  if (!API || !PID) { $('vLogin').classList.remove('hide'); $('cfgWarn').classList.remove('hide'); return; }
+  var rt = null; try { rt = sessionStorage.getItem('scical_rt'); } catch (e) {}
+  if (rt) { S.refresh = rt; token().then(enter).catch(function () { $('vLogin').classList.remove('hide'); }); }
+  else $('vLogin').classList.remove('hide');
+})();
+</script>
+<script>
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+}
+</script>
+</body>
+</html>
